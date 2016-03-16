@@ -16,6 +16,13 @@ int  button1;
 int  button2;
 int  button3;
 
+int button2FF = 0;
+int button3FF = 0;
+boolean button2FFb;
+boolean button3FFb;
+const int ff = 5;
+const int ffThreshold = 8;
+
 boolean state = true;
 boolean on = true;
 
@@ -35,23 +42,16 @@ boolean point = false;
 #define DIO 9
 TM1637 tm1637(CLK,DIO);
 
-
 void setup()
 {
-  tmElements_t tmp;
-  RTC.read(tmp);
-  h=tmp.Hour;
-  m=tmp.Minute;
-  switchMinute = tmp.Year -30;
-  switchHour = tmp.Month-1;
-  
+  readTimes();
   Serial.begin(9600);
   //setSyncProvider(RTC.get);
   if(timeStatus() != timeSet) Serial.println("Unable to sync with the RTC");
   else Serial.println("RTC has set the system time");
   tm1637.init();
   tm1637.point(POINT_ON);    
-  tm1637.set(BRIGHT_TYPICAL);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
+  tm1637.set(BRIGHT_DARKEST);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
   setRTC();
   pinMode(ledPin,OUTPUT);
   pinMode(switchPin,OUTPUT);
@@ -66,19 +66,41 @@ void loop()
   button1 = digitalRead(button1Pin);   
   button2 = digitalRead(button2Pin); 
   button3 = digitalRead(button3Pin);
+  if(button2 == HIGH) { button2FF += 1; }
+  else { button2FF = 0; }
+  if(button3 == HIGH) { button3FF += 1; }
+  else { button3FF = 0; }
+  if (button2FF >= ffThreshold) { button2FFb = true;}
+  else { button2FFb = false; }
+  if (button3FF >= ffThreshold) { button3FFb = true; }
+  else { button3FFb = false; }
   
   if(button1== HIGH) {
     displaySwitchTime(); 
+    if(button2==HIGH && button2FFb == true) for(int i = 0; i <= ff; i++) addMinute();
+    if(button3==HIGH && button3FFb == true) for(int i = 0; i <= ff; i++) subMinute();
     if(button2==HIGH)addMinute();
     if(button3==HIGH)subMinute();
   } else {
     displayTime();
+    if(button2==HIGH && button2FFb == true) for(int i = 0; i <= ff; i++) addM();
+    if(button3==HIGH && button3FFb == true) for(int i = 0; i <= ff; i++) subM();
     if(button2==HIGH)addM();
     if(button3==HIGH)subM();
   }
   checkSwitch();
   checkPoint();
-  delay(20);
+  readTimes();
+  setRTC();
+  delay(200);
+}
+void readTimes() {
+  tmElements_t tmp;
+  RTC.read(tmp);
+  h=tmp.Hour;
+  m=tmp.Minute;
+  switchMinute = tmp.Year -30;
+  switchHour = tmp.Month-1;  
 }
 void checkPoint() {
   if(point==false) {
@@ -95,7 +117,6 @@ void displayTime() {
   tm1637.display(2,minute() / 10);
   tm1637.display(3,minute() % 10);
 }
-
 void displaySwitchTime() {
   tm1637.display(0,switchHour / 10);
   tm1637.display(1,switchHour % 10); 
@@ -179,10 +200,17 @@ void setRTC() {
   //setTime(h, m, 1, 1, 1, 1);
   RTC.set(now());          
 }
+//AddHours Helper Method
+int addHours(int input, int increment) {
+  int sum = input + increment;
+  if (sum >= 24) return sum -= 24;
+  return sum;
+}
+//Switching Methods
 void checkSwitch() {  
   on = checkClock(hour(),minute());
-  if(on==true) { switch1();
-  }else{ switch2(); }
+  if(on==true) switch1();
+  switch2();
 }
 boolean checkClock(int hh, int mm) {
     if (hh == switchHour) {
@@ -198,11 +226,6 @@ boolean checkClock(int hh, int mm) {
     }
   return false;
 }
-int addHours(int input, int increment) {
-  int sum = input + increment;
-  if (sum >= 24) return sum -= 24;
-  return sum;
-}
 void switch1() {
   if (state != on) {
   digitalWrite(powerPin, HIGH);
@@ -213,8 +236,7 @@ void switch1() {
   state = true;
   digitalWrite(powerPin, LOW);
   }
-}
-  
+} 
 void switch2() { 
   if (state != on) {
   digitalWrite(powerPin, HIGH);
