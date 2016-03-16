@@ -26,12 +26,17 @@ int button2FF = 0;
 int button3FF = 0;
 boolean button2FFb;
 boolean button3FFb;
-const int ff = 5-1; //-1 for double call in logic
-const int ffThreshold = 20; 
+const int firstValue = 5-1; //-1 for double call in logic
+const int secondValue = 19;
+int ff = firstValue;
+const int ffThreshold = 20;
+const int secondThreshold = 30; 
 
 //Variables for Switching function
 boolean state = true;
 boolean on = true;
+const int delay1Switching = 300;
+const int delay2Switching = 200;
 
 //Time Variables with standart values
 int switchHour = 11;
@@ -69,15 +74,13 @@ void loop()
   button1 = digitalRead(button1Pin);   
   button2 = digitalRead(button2Pin); 
   button3 = digitalRead(button3Pin);
-  if(button2 == HIGH) { button2FF += 1; }
-  else { button2FF = 0; }
-  if(button3 == HIGH) { button3FF += 1; }
-  else { button3FF = 0; }
-  if (button2FF >= ffThreshold) { button2FFb = true;}
-  else { button2FFb = false; }
-  if (button3FF >= ffThreshold) { button3FFb = true; }
-  else { button3FFb = false; }
-  
+  if(button2 == HIGH) { button2FF += 1; } else { button2FF = 0; }
+  if(button3 == HIGH) { button3FF += 1; } else { button3FF = 0; }
+  if (button2FF >= ffThreshold) { button2FFb = true;} else { button2FFb = false; }
+  if (button3FF >= ffThreshold) { button3FFb = true; } else { button3FFb = false; }
+  ff = firstValue;
+  if (button2FF >= secondThreshold) ff=secondValue;
+  if (button3FF >= secondThreshold) ff=secondValue;
   if(button1== HIGH) {
     displaySwitchTime(); 
     if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addMinute(); 
@@ -237,10 +240,10 @@ boolean checkClock(int hh, int mm) {
 void switch1() {
   if (state != on) {
   digitalWrite(powerPin, HIGH);
-  delay(1000);
+  delay(delay1Switching);
   digitalWrite(switchPin, LOW);
   digitalWrite(ledPin, LOW);
-  delay(1000);
+  delay(delay2Switching);
   state = true;
   digitalWrite(powerPin, LOW);
   }
@@ -248,10 +251,10 @@ void switch1() {
 void switch2() { 
   if (state != on) {
   digitalWrite(powerPin, HIGH);
-  delay(1000);
+  delay(delay1Switching);
   digitalWrite(switchPin, HIGH);
   digitalWrite(ledPin, HIGH);
-  delay(1000);
+  delay(delay2Switching);
   state = false;
   digitalWrite(powerPin, LOW);
   }
