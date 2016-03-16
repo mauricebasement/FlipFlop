@@ -8,9 +8,9 @@
 const int button1Pin = 10;
 const int button2Pin = 11;
 const int button3Pin = 12;
-const int ledPin =4;
+const int ledPin = 13;
 const int powerPin = 2;
-const int switchPin =13;
+const int switchPin = 3;
 
 int  button1;
 int  button2;
@@ -19,13 +19,16 @@ int  button3;
 boolean state = true;
 boolean on = true;
 
-//Switch Time
 int switchHour = 11;
 int switchMinute = 59;
 
-//Set Time
-int h = 12;
-int m = 1;
+int h=12;
+int m=1;
+
+int H;
+int M;
+
+boolean point = false;
 
 //Digit Display
 #define CLK 8   
@@ -35,21 +38,27 @@ TM1637 tm1637(CLK,DIO);
 
 void setup()
 {
-    Serial.begin(9600);
-    setSyncProvider(RTC.get);
-    if(timeStatus() != timeSet) Serial.println("Unable to sync with the RTC");
-    else Serial.println("RTC has set the system time");
-    tm1637.init();
-    tm1637.point(POINT_ON);    
-    tm1637.set(BRIGHT_TYPICAL);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
-    setRTC();
-    pinMode(ledPin,OUTPUT);
-    pinMode(switchPin,OUTPUT);
-    pinMode(powerPin,OUTPUT);
-    
-    pinMode(button1Pin, INPUT);
-    pinMode(button2Pin, INPUT);
-    pinMode(button3Pin, INPUT);
+  tmElements_t tmp;
+  RTC.read(tmp);
+  h=tmp.Hour;
+  m=tmp.Minute;
+  switchMinute = tmp.Year -30;
+  switchHour = tmp.Month-1;
+  
+  Serial.begin(9600);
+  //setSyncProvider(RTC.get);
+  if(timeStatus() != timeSet) Serial.println("Unable to sync with the RTC");
+  else Serial.println("RTC has set the system time");
+  tm1637.init();
+  tm1637.point(POINT_ON);    
+  tm1637.set(BRIGHT_TYPICAL);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
+  setRTC();
+  pinMode(ledPin,OUTPUT);
+  pinMode(switchPin,OUTPUT);
+  pinMode(powerPin,OUTPUT);
+  pinMode(button1Pin, INPUT);
+  pinMode(button2Pin, INPUT);
+  pinMode(button3Pin, INPUT);
 }
 
 void loop()
@@ -68,20 +77,26 @@ void loop()
     if(button3==HIGH)subM();
   }
   checkSwitch();
-  
-  delay(10);
+  checkPoint();
+  delay(20);
 }
-
-void displayTime()
-{
+void checkPoint() {
+  if(point==false) {
+    tm1637.point(POINT_ON);
+    point=true;
+  } else {
+    tm1637.point(POINT_OFF);
+    point=false;
+  }
+}
+void displayTime() {
   tm1637.display(0,hour() / 10);
   tm1637.display(1,hour() % 10); 
   tm1637.display(2,minute() / 10);
   tm1637.display(3,minute() % 10);
 }
 
-void displaySwitchTime()
-{
+void displaySwitchTime() {
   tm1637.display(0,switchHour / 10);
   tm1637.display(1,switchHour % 10); 
   tm1637.display(2,switchMinute / 10);
@@ -90,18 +105,20 @@ void displaySwitchTime()
 //Set Switch Time
 void addMinute() {
   if(switchMinute==59) {
-    addHour();
     switchMinute=0;
+    addHour();
   } else {
     switchMinute+=1;
+    setRTC();
   }
 }
 void subMinute() {
   if(switchMinute==0) {
-    subHour();
     switchMinute=59;
+    subHour();
   } else {
     switchMinute-=1;
+    setRTC();
   }  
 }
 void addHour() {
@@ -110,6 +127,7 @@ void addHour() {
   } else {
     switchHour+=1;
   }
+  setRTC();
 }
 void subHour() {
   if(switchHour==0) {
@@ -117,6 +135,7 @@ void subHour() {
   } else {
     switchHour-=1;
   }  
+  setRTC();
 }
 //Set Time
 void addM() {
@@ -154,24 +173,14 @@ void subH() {
   setRTC();  
 }
 void setRTC() {
-    time_t t;
-    tmElements_t tm;
-    tm.Year = 30;
-    tm.Month = 1;
-    tm.Day = 1;
-    tm.Hour = h;
-    tm.Minute = m;
-    tm.Second = 0;
-    t = makeTime(tm);
-    RTC.set(t);
-   
+  H = switchHour + 1;
+  M = 2000 + switchMinute;
+  setTime(h, m, 1, 1, H, M);
+  //setTime(h, m, 1, 1, 1, 1);
+  RTC.set(now());          
 }
 void checkSwitch() {  
-  tmElements_t tim;
-  RTC.read(tim);
-  h=tim.Hour;
-  m=tim.Minute;
-  on = checkClock(h,m);
+  on = checkClock(hour(),minute());
   if(on==true) { switch1();
   }else{ switch2(); }
 }
@@ -189,7 +198,6 @@ boolean checkClock(int hh, int mm) {
     }
   return false;
 }
-
 int addHours(int input, int increment) {
   int sum = input + increment;
   if (sum >= 24) return sum -= 24;
@@ -200,6 +208,7 @@ void switch1() {
   digitalWrite(powerPin, HIGH);
   delay(1000);
   digitalWrite(switchPin, LOW);
+  digitalWrite(ledPin, LOW);
   delay(1000);
   state = true;
   digitalWrite(powerPin, LOW);
@@ -211,6 +220,7 @@ void switch2() {
   digitalWrite(powerPin, HIGH);
   delay(1000);
   digitalWrite(switchPin, HIGH);
+  digitalWrite(ledPin, HIGH);
   delay(1000);
   state = false;
   digitalWrite(powerPin, LOW);
