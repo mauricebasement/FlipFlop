@@ -26,8 +26,8 @@ int button2FF = 0;
 int button3FF = 0;
 boolean button2FFb;
 boolean button3FFb;
-const int ff = 10-1; //-1 for double call in logic
-const int ffThreshold = 5; 
+const int ff = 5-1; //-1 for double call in logic
+const int ffThreshold = 20; 
 
 //Variables for Switching function
 boolean state = true;
@@ -82,14 +82,14 @@ void loop()
     displaySwitchTime(); 
     if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addMinute(); 
     if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subMinute();
-    if(button2==HIGH)addMinute();
-    if(button3==HIGH)subMinute();
+    if(button2==HIGH && button2FF%2 == 1)addMinute();
+    if(button3==HIGH && button3FF%2 == 1)subMinute();
   } else {
     displayTime();
     if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addM();
     if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subM();
-    if(button2==HIGH)addM();
-    if(button3==HIGH)subM();
+    if(button2==HIGH && button2FF%2 == 1)addM();
+    if(button3==HIGH && button3FF%2 == 1)subM();
   }
   
   checkSwitch();
@@ -100,7 +100,7 @@ void loop()
     setRTC();
     rtcCheck = 0;
   }
-  delay(300);
+  delay(100);
 }
 void readTimes() {
   tmElements_t tmp;
