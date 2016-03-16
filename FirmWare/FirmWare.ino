@@ -1,3 +1,4 @@
+//Libraries
 #include <EEPROM.h>
 #include <DS3232RTC.h>    //http://github.com/JChristensen/DS3232RTC
 #include <Time.h>         //http://www.arduino.cc/playground/Code/Time  
@@ -5,36 +6,42 @@
 #include "TM1637.h"
 
 //Pin Out
-const int button1Pin = 10;
-const int button2Pin = 11;
-const int button3Pin = 12;
-const int ledPin = 13;
-const int powerPin = 2;
-const int switchPin = 3;
+const int button1Pin = 10; //Button to switch between times
+const int button2Pin = 11; //Up Button
+const int button3Pin = 12; //Down Button
+const int ledPin = 13; //Indicator LED
+const int powerPin = 2; //Ballast Power Interrupt Signal
+const int switchPin = 3; //Bulb Switching Signal
 
+//RTC Check Counter
+float rtcCheck = 0;
+
+//Variables to store button states
 int  button1;
 int  button2;
 int  button3;
 
+//Variables for Fast Forward function
 int button2FF = 0;
 int button3FF = 0;
 boolean button2FFb;
 boolean button3FFb;
-const int ff = 5;
-const int ffThreshold = 8;
+const int ff = 10-1; //-1 for double call in logic
+const int ffThreshold = 5; 
 
+//Variables for Switching function
 boolean state = true;
 boolean on = true;
 
+//Time Variables with standart values
 int switchHour = 11;
 int switchMinute = 59;
-
 int h=12;
 int m=1;
-
 int H;
 int M;
 
+//Point Indicator
 boolean point = false;
 
 //Digit Display
@@ -44,12 +51,8 @@ TM1637 tm1637(CLK,DIO);
 
 void setup()
 {
-  readTimes();
-  Serial.begin(9600);
-  //setSyncProvider(RTC.get);
-  if(timeStatus() != timeSet) Serial.println("Unable to sync with the RTC");
-  else Serial.println("RTC has set the system time");
-  tm1637.init();
+  readTimes(); //Read Times from RTC Memory
+  tm1637.init(); //Init 4 Digit LED Display
   tm1637.point(POINT_ON);    
   tm1637.set(BRIGHT_DARKEST);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
   setRTC();
@@ -77,22 +80,27 @@ void loop()
   
   if(button1== HIGH) {
     displaySwitchTime(); 
-    if(button2==HIGH && button2FFb == true) for(int i = 0; i <= ff; i++) addMinute();
-    if(button3==HIGH && button3FFb == true) for(int i = 0; i <= ff; i++) subMinute();
+    if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addMinute(); 
+    if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subMinute();
     if(button2==HIGH)addMinute();
     if(button3==HIGH)subMinute();
   } else {
     displayTime();
-    if(button2==HIGH && button2FFb == true) for(int i = 0; i <= ff; i++) addM();
-    if(button3==HIGH && button3FFb == true) for(int i = 0; i <= ff; i++) subM();
+    if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addM();
+    if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subM();
     if(button2==HIGH)addM();
     if(button3==HIGH)subM();
   }
+  
   checkSwitch();
   checkPoint();
-  readTimes();
-  setRTC();
-  delay(200);
+  if(rtcCheck <= 100000) {rtcCheck += 1; }
+  else {
+    readTimes();
+    setRTC();
+    rtcCheck = 0;
+  }
+  delay(300);
 }
 void readTimes() {
   tmElements_t tmp;
