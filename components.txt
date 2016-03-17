@@ -1,0 +1,4 @@
+Arduino Pro Mini (AtMega168 5V 16MHZ)
+DS3231 RTC Module
+4 Digit LED Display interfaced via TM1637
+PushButtons

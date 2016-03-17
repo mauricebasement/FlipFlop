@@ -15,6 +15,7 @@ const int switchPin = 3; //Bulb Switching Signal
 
 //RTC Check Counter
 float rtcCheck = 0;
+const float rtcCheckValue=100000;
 
 //Variables to store button states
 int  button1;
@@ -97,7 +98,7 @@ void loop()
   
   checkSwitch();
   checkPoint();
-  if(rtcCheck <= 100000) {rtcCheck += 1; }
+  if(rtcCheck <= rtcCheckValue) {rtcCheck += 1; }
   else {
     readTimes();
     setRTC();
