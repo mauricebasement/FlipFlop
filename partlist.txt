@@ -1,0 +1,10 @@
+Arduino Pro Mini 5V, 16 MHZ, AtMega 168
+
+DS3231 Real Time Clock Module
+-LIR2031 (Rechargable Battery)
+
+4 Digit LED Display via TM167
+
+Songle Relay 5V
+
+PowerConverter AC to 5V DC

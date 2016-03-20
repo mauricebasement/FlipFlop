@@ -27,11 +27,11 @@ int button2FF = 0;
 int button3FF = 0;
 boolean button2FFb;
 boolean button3FFb;
-const int firstValue = 5-1; //-1 for double call in logic
+const int firstValue = 2-1; //-1 for double call in logic
 const int secondValue = 19;
 int ff = firstValue;
 const int ffThreshold = 20;
-const int secondThreshold = 30; 
+const int secondThreshold = 40; 
 
 //Variables for Switching function
 boolean state = true;
