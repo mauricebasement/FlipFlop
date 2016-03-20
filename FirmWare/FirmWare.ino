@@ -3,7 +3,7 @@
 #include <DS3232RTC.h>    //http://github.com/JChristensen/DS3232RTC
 #include <Time.h>         //http://www.arduino.cc/playground/Code/Time  
 #include <Wire.h>         //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
-#include "TM1637.h"
+#include <TM1637.h>
 
 //Pin Out
 const int button1Pin = 10; //Button to switch between times
@@ -27,17 +27,17 @@ int button2FF = 0;
 int button3FF = 0;
 boolean button2FFb;
 boolean button3FFb;
-const int firstValue = 2-1; //-1 for double call in logic
-const int secondValue = 19;
+const int firstValue = 2;
+const int secondValue = 20;
 int ff = firstValue;
-const int ffThreshold = 20;
-const int secondThreshold = 40; 
+const int ffThreshold = 30;
+const int secondThreshold = 45; 
 
 //Variables for Switching function
 boolean state = true;
 boolean on = true;
-const int delay1Switching = 300;
-const int delay2Switching = 200;
+const int delay1Switching = 1000; //Between interuption of power and bulb switching
+const int delay2Switching = 1000; //Between bulb switching and end of powerinteruption
 
 //Time Variables with standart values
 int switchHour = 11;
@@ -49,6 +49,9 @@ int M;
 
 //Point Indicator
 boolean point = false;
+
+//Main Delay
+const int mainDelay = 100;
 
 //Digit Display
 #define CLK 8   
@@ -68,6 +71,17 @@ void setup()
   pinMode(button1Pin, INPUT);
   pinMode(button2Pin, INPUT);
   pinMode(button3Pin, INPUT);
+  if (checkClock(hour(),minute()) == false) {
+    digitalWrite(powerPin,HIGH);
+    digitalWrite(ledPin,HIGH);
+    digitalWrite(switchPin,HIGH);
+    state = false;
+  } else {
+    digitalWrite(powerPin,HIGH);
+    digitalWrite(ledPin,LOW);
+    digitalWrite(switchPin,LOW);
+    state = true;
+  }
 }
 
 void loop()
@@ -84,18 +98,24 @@ void loop()
   if (button3FF >= secondThreshold) ff=secondValue;
   if(button1== HIGH) {
     displaySwitchTime(); 
-    if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addMinute(); 
-    if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subMinute();
-    if(button2==HIGH && button2FF%2 == 1)addMinute();
-    if(button3==HIGH && button3FF%2 == 1)subMinute();
+    if(button2==HIGH) {
+      if(button2FFb == true) { for(int i = 0; i < ff; i++) addMinute(); 
+      } else { addMinute(); }
+    }
+    if(button3==HIGH) {
+      if(button3FFb == true) { for(int i = 0; i < ff; i++) subMinute();
+      } else { subMinute(); }
+    }
   } else {
     displayTime();
-    if(button2==HIGH && button2FFb == true) for(int i = 0; i < ff; i++) addM();
-    if(button3==HIGH && button3FFb == true) for(int i = 0; i < ff; i++) subM();
-    if(button2==HIGH && button2FF%2 == 1)addM();
-    if(button3==HIGH && button3FF%2 == 1)subM();
+    if(button2==HIGH) {
+      if(button2FFb == true) { for(int i = 0; i < ff; i++) addM();
+      } else { addM(); }
+    }
+    if(button3==HIGH)
+      if(button3FFb == true) { for(int i = 0; i < ff; i++) subM(); 
+      } else { subM(); }
   }
-  
   checkSwitch();
   checkPoint();
   if(rtcCheck <= rtcCheckValue) {rtcCheck += 1; }
@@ -104,7 +124,6 @@ void loop()
     setRTC();
     rtcCheck = 0;
   }
-  delay(100);
 }
 void readTimes() {
   tmElements_t tmp;
@@ -221,8 +240,10 @@ int addHours(int input, int increment) {
 //Switching Methods
 void checkSwitch() {  
   on = checkClock(hour(),minute());
-  if(on==true) switch1();
-  switch2();
+  if(on==true) { switch1(); 
+  } else {  switch2(); }
+  delay(mainDelay);
+  digitalWrite(powerPin, LOW);
 }
 boolean checkClock(int hh, int mm) {
     if (hh == switchHour) {
