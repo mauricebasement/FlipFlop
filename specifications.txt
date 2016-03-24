@@ -1,0 +1,10 @@
+Spefcifications FliFlopSwitch
+
+Product 1:
+-Switches 1 Ballast up to 1000W to two bulbs
+
+Product 2:
+-Switches 2 Ballasts up to 1000W each to four bulbs
+
+Prodcut 3:
+-Switches 4 Ballasts up to 1000W to eight bulbs
